@@ -1,0 +1,8 @@
+﻿RNF-13 - 100 solicitudes HTTP sin errores 5xx
+Mezcla: 40 GET /login, 30 POST /login con usuario inexistente, 20 GET /acceso sin sesion, 10 GET /login?logout=1.
+Solicitudes ejecutadas: 100
+Respuestas HTTP 200: 100
+Errores 5xx: 0
+Criterio: 0 errores 5xx
+Resultado: CUMPLE
+Tiempo acumulado de las 100 solicitudes (s): 2.24

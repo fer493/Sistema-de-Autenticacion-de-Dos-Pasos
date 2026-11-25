@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: mx.uacm.auth2fa.modelo.ServicioAutenticacionTest
+-------------------------------------------------------------------------------
+Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 12.87 s -- in mx.uacm.auth2fa.modelo.ServicioAutenticacionTest

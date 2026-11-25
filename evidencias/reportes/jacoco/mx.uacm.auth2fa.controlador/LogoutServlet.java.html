@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LogoutServlet.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Auth2FA</a> &gt; <a href="index.source.html" class="el_package">mx.uacm.auth2fa.controlador</a> &gt; <span class="el_source">LogoutServlet.java</span></div><h1>LogoutServlet.java</h1><pre class="source lang-java linenums">package mx.uacm.auth2fa.controlador;
+
+import java.io.IOException;
+import java.util.logging.Logger;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+/**
+ * Controlador de cierre de sesión.
+ *
+ * &lt;p&gt;No delega en el servicio porque {@code HttpSession} es una
+ * responsabilidad web. La operación es idempotente: si no existe sesión, solo
+ * redirige al acceso con el aviso correspondiente.&lt;/p&gt;
+ */
+<span class="nc" id="L19">public class LogoutServlet extends HttpServlet {</span>
+
+    private static final long serialVersionUID = 1L;
+
+<span class="nc" id="L23">    private static final Logger REGISTRO = Logger.getLogger(LogoutServlet.class.getName());</span>
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+<span class="nc" id="L28">        HttpSession sesion = request.getSession(false);</span>
+<span class="nc bnc" id="L29" title="All 2 branches missed.">        if (sesion != null) {</span>
+<span class="nc" id="L30">            Object usuarioId = sesion.getAttribute(&quot;usuarioId&quot;);</span>
+<span class="nc" id="L31">            sesion.invalidate();</span>
+<span class="nc" id="L32">            REGISTRO.info(() -&gt; &quot;LOGOUT usuarioId=&quot; + usuarioId);</span>
+        }
+<span class="nc" id="L34">        response.sendRedirect(request.getContextPath() + &quot;/login?logout=1&quot;);</span>
+<span class="nc" id="L35">    }</span>
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+<span class="nc" id="L40">        doPost(request, response);</span>
+<span class="nc" id="L41">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

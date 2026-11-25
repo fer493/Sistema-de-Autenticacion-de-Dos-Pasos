@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Usuario.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Auth2FA</a> &gt; <a href="index.source.html" class="el_package">mx.uacm.auth2fa.modelo</a> &gt; <span class="el_source">Usuario.java</span></div><h1>Usuario.java</h1><pre class="source lang-java linenums">package mx.uacm.auth2fa.modelo;
+
+import java.time.Instant;
+
+/**
+ * Cuenta del sistema 2FA.
+ *
+ * &lt;p&gt;La entidad no depende de la web ni de JDBC. El hash de la contraseña se
+ * transporta porque el servicio lo necesita para comparar; nunca se expone a
+ * una vista ni se escribe en el registro.&lt;/p&gt;
+ */
+public final class Usuario {
+
+    private final long id;
+    private final String nombreUsuario;
+    private final String hashPassword;
+    private final EstadoUsuario estado;
+    private final int intentosFallidos;
+    private final Instant bloqueadoHasta;
+
+    public Usuario(long id,
+                   String nombreUsuario,
+                   String hashPassword,
+                   EstadoUsuario estado,
+                   int intentosFallidos,
+<span class="fc" id="L26">                   Instant bloqueadoHasta) {</span>
+<span class="pc bpc" id="L27" title="1 of 2 branches missed.">        if (id &lt;= 0) {</span>
+<span class="nc" id="L28">            throw new IllegalArgumentException(&quot;El identificador del usuario debe ser mayor que cero&quot;);</span>
+        }
+<span class="pc bpc" id="L30" title="2 of 4 branches missed.">        if (nombreUsuario == null || nombreUsuario.isEmpty()) {</span>
+<span class="nc" id="L31">            throw new IllegalArgumentException(&quot;El nombre de usuario es obligatorio&quot;);</span>
+        }
+<span class="pc bpc" id="L33" title="2 of 4 branches missed.">        if (hashPassword == null || hashPassword.isEmpty()) {</span>
+<span class="nc" id="L34">            throw new IllegalArgumentException(&quot;El hash de la contraseña es obligatorio&quot;);</span>
+        }
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">        if (estado == null) {</span>
+<span class="nc" id="L37">            throw new IllegalArgumentException(&quot;El estado del usuario es obligatorio&quot;);</span>
+        }
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        if (intentosFallidos &lt; 0) {</span>
+<span class="nc" id="L40">            throw new IllegalArgumentException(&quot;Los intentos fallidos no pueden ser negativos&quot;);</span>
+        }
+<span class="fc" id="L42">        this.id = id;</span>
+<span class="fc" id="L43">        this.nombreUsuario = nombreUsuario;</span>
+<span class="fc" id="L44">        this.hashPassword = hashPassword;</span>
+<span class="fc" id="L45">        this.estado = estado;</span>
+<span class="fc" id="L46">        this.intentosFallidos = intentosFallidos;</span>
+<span class="fc" id="L47">        this.bloqueadoHasta = bloqueadoHasta;</span>
+<span class="fc" id="L48">    }</span>
+
+    /**
+     * Evalúa el bloqueo efectivo de la cuenta en un instante dado.
+     *
+     * &lt;p&gt;Un estado administrativo {@code BLOQUEADO} prevalece sobre la fecha.
+     * Si el estado es {@code ACTIVO}, solo bloquea una fecha de desbloqueo
+     * posterior al instante recibido; una fecha vencida ya no bloquea.&lt;/p&gt;
+     *
+     * @param ahora instante de referencia
+     * @return {@code true} si la cuenta no debe permitir el acceso
+     */
+    public boolean estaBloqueado(Instant ahora) {
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (ahora == null) {</span>
+<span class="nc" id="L62">            throw new IllegalArgumentException(&quot;El instante de referencia es obligatorio&quot;);</span>
+        }
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (estado == EstadoUsuario.BLOQUEADO) {</span>
+<span class="fc" id="L65">            return true;</span>
+        }
+<span class="fc bfc" id="L67" title="All 4 branches covered.">        return bloqueadoHasta != null &amp;&amp; bloqueadoHasta.isAfter(ahora);</span>
+    }
+
+    /**
+     * Indica si la fecha de desbloqueo existe y ya venció.
+     *
+     * @param ahora instante de referencia
+     * @return {@code true} si hay una fecha anterior o igual al instante actual
+     */
+    public boolean tieneBloqueoVencido(Instant ahora) {
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (ahora == null) {</span>
+<span class="nc" id="L78">            throw new IllegalArgumentException(&quot;El instante de referencia es obligatorio&quot;);</span>
+        }
+<span class="pc bpc" id="L80" title="1 of 4 branches missed.">        return bloqueadoHasta != null &amp;&amp; !bloqueadoHasta.isAfter(ahora);</span>
+    }
+
+    public long getId() {
+<span class="fc" id="L84">        return id;</span>
+    }
+
+    public String getNombreUsuario() {
+<span class="fc" id="L88">        return nombreUsuario;</span>
+    }
+
+    public String getHashPassword() {
+<span class="fc" id="L92">        return hashPassword;</span>
+    }
+
+    public EstadoUsuario getEstado() {
+<span class="fc" id="L96">        return estado;</span>
+    }
+
+    public int getIntentosFallidos() {
+<span class="fc" id="L100">        return intentosFallidos;</span>
+    }
+
+    public Instant getBloqueadoHasta() {
+<span class="fc" id="L104">        return bloqueadoHasta;</span>
+    }
+
+    @Override
+    public String toString() {
+        // No se incluye el hash para evitar filtrar material sensible en trazas.
+<span class="nc" id="L110">        return &quot;Usuario{id=&quot; + id</span>
+                + &quot;, nombreUsuario='&quot; + nombreUsuario + '\''
+                + &quot;, estado=&quot; + estado
+                + &quot;, intentosFallidos=&quot; + intentosFallidos
+                + &quot;, bloqueadoHasta=&quot; + bloqueadoHasta
+                + '}';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

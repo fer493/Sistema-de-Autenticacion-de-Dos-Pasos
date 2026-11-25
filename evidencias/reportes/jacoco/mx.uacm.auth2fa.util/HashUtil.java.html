@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HashUtil.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Auth2FA</a> &gt; <a href="index.source.html" class="el_package">mx.uacm.auth2fa.util</a> &gt; <span class="el_source">HashUtil.java</span></div><h1>HashUtil.java</h1><pre class="source lang-java linenums">package mx.uacm.auth2fa.util;
+
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.Base64;
+
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+
+/**
+ * Genera y verifica hashes PBKDF2 de contraseñas y respuestas.
+ *
+ * &lt;p&gt;Formato almacenado: {@code pbkdf2$210000$salB64$hashB64}. Cada llamada usa
+ * una sal aleatoria de 16 bytes y deriva 32 bytes con
+ * {@code PBKDF2WithHmacSHA256}. La comparación se hace con
+ * {@link MessageDigest#isEqual(byte[], byte[])} para reducir el riesgo de
+ * ataques de tiempo. La clase nunca registra el secreto.&lt;/p&gt;
+ */
+public final class HashUtil {
+
+    private static final String PREFIJO = &quot;pbkdf2&quot;;
+    private static final String ALGORITMO = &quot;PBKDF2WithHmacSHA256&quot;;
+    private static final int ITERACIONES = 210_000;
+    private static final int LONGITUD_SAL = 16;
+    private static final int LONGITUD_CLAVE = 32;
+<span class="fc" id="L27">    private static final SecureRandom ALEATORIO = new SecureRandom();</span>
+
+    private HashUtil() {
+        // Clase de utilidad: no se instancia.
+    }
+
+    /**
+     * Calcula el hash de una contraseña.
+     *
+     * @param password contraseña no nula y no vacía; no se normaliza
+     * @return hash con sal e iteraciones en el formato documentado
+     */
+    public static String hashPassword(String password) {
+<span class="fc bfc" id="L40" title="All 4 branches covered.">        if (password == null || password.isEmpty()) {</span>
+<span class="fc" id="L41">            throw new IllegalArgumentException(&quot;La contraseña no puede estar vacía&quot;);</span>
+        }
+<span class="fc" id="L43">        return hashear(password);</span>
+    }
+
+    /**
+     * Verifica una contraseña contra un hash almacenado.
+     *
+     * @param passwordCandidata contraseña escrita por la persona
+     * @param hashAlmacenado    hash en el formato documentado
+     * @return {@code true} solo si coincide; {@code false} ante un hash inválido
+     */
+    public static boolean verificarPassword(String passwordCandidata, String hashAlmacenado) {
+<span class="pc bpc" id="L54" title="2 of 6 branches missed.">        if (passwordCandidata == null || passwordCandidata.isEmpty() || hashAlmacenado == null) {</span>
+<span class="fc" id="L55">            return false;</span>
+        }
+<span class="fc" id="L57">        return verificar(passwordCandidata, hashAlmacenado);</span>
+    }
+
+    /**
+     * Calcula el hash de una respuesta ya normalizada.
+     *
+     * @param respuestaNormalizada respuesta normalizada
+     * @return hash con sal e iteraciones en el formato documentado
+     */
+    public static String hashRespuesta(String respuestaNormalizada) {
+<span class="pc bpc" id="L67" title="1 of 4 branches missed.">        if (respuestaNormalizada == null || respuestaNormalizada.isEmpty()) {</span>
+<span class="fc" id="L68">            throw new IllegalArgumentException(&quot;La respuesta no puede estar vacía&quot;);</span>
+        }
+<span class="fc" id="L70">        return hashear(respuestaNormalizada);</span>
+    }
+
+    /**
+     * Verifica una respuesta normalizada contra un hash almacenado.
+     *
+     * @param respuestaNormalizada respuesta ya normalizada
+     * @param hashAlmacenado       hash en el formato documentado
+     * @return {@code true} solo si coincide; {@code false} ante un hash inválido
+     */
+    public static boolean verificarRespuesta(String respuestaNormalizada, String hashAlmacenado) {
+<span class="pc bpc" id="L81" title="3 of 6 branches missed.">        if (respuestaNormalizada == null || respuestaNormalizada.isEmpty() || hashAlmacenado == null) {</span>
+<span class="nc" id="L82">            return false;</span>
+        }
+<span class="fc" id="L84">        return verificar(respuestaNormalizada, hashAlmacenado);</span>
+    }
+
+    private static String hashear(String valor) {
+<span class="fc" id="L88">        byte[] sal = new byte[LONGITUD_SAL];</span>
+<span class="fc" id="L89">        ALEATORIO.nextBytes(sal);</span>
+<span class="fc" id="L90">        byte[] derivada = derivar(valor, sal, ITERACIONES);</span>
+<span class="fc" id="L91">        return PREFIJO + '$' + ITERACIONES + '$'</span>
+<span class="fc" id="L92">                + Base64.getEncoder().encodeToString(sal) + '$'</span>
+<span class="fc" id="L93">                + Base64.getEncoder().encodeToString(derivada);</span>
+    }
+
+    private static boolean verificar(String valor, String hashAlmacenado) {
+<span class="fc" id="L97">        String[] partes = hashAlmacenado.split(&quot;\\$&quot;, -1);</span>
+<span class="pc bpc" id="L98" title="1 of 4 branches missed.">        if (partes.length != 4 || !PREFIJO.equals(partes[0])) {</span>
+<span class="fc" id="L99">            return false;</span>
+        }
+        try {
+<span class="fc" id="L102">            int iteraciones = Integer.parseInt(partes[1]);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">            if (iteraciones &lt;= 0) {</span>
+<span class="fc" id="L104">                return false;</span>
+            }
+<span class="fc" id="L106">            byte[] sal = Base64.getDecoder().decode(partes[2]);</span>
+<span class="fc" id="L107">            byte[] esperado = Base64.getDecoder().decode(partes[3]);</span>
+<span class="pc bpc" id="L108" title="2 of 4 branches missed.">            if (sal.length == 0 || esperado.length == 0) {</span>
+<span class="nc" id="L109">                return false;</span>
+            }
+<span class="fc" id="L111">            byte[] calculado = derivar(valor, sal, iteraciones, esperado.length);</span>
+<span class="fc" id="L112">            return MessageDigest.isEqual(esperado, calculado);</span>
+<span class="fc" id="L113">        } catch (IllegalArgumentException excepcion) {</span>
+            // Formato inválido (Base64 o iteraciones): se trata como no coincidente.
+<span class="fc" id="L115">            return false;</span>
+        }
+    }
+
+    private static byte[] derivar(String valor, byte[] sal, int iteraciones) {
+<span class="fc" id="L120">        return derivar(valor, sal, iteraciones, LONGITUD_CLAVE);</span>
+    }
+
+    private static byte[] derivar(String valor, byte[] sal, int iteraciones, int longitud) {
+<span class="fc" id="L124">        PBEKeySpec especificacion = new PBEKeySpec(valor.toCharArray(), sal, iteraciones, longitud * 8);</span>
+        try {
+<span class="fc" id="L126">            SecretKeyFactory fabrica = SecretKeyFactory.getInstance(ALGORITMO);</span>
+<span class="fc" id="L127">            return fabrica.generateSecret(especificacion).getEncoded();</span>
+<span class="nc" id="L128">        } catch (GeneralSecurityException excepcion) {</span>
+<span class="nc" id="L129">            throw new IllegalStateException(&quot;No fue posible calcular el hash PBKDF2&quot;, excepcion);</span>
+        } finally {
+<span class="fc" id="L131">            especificacion.clearPassword();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

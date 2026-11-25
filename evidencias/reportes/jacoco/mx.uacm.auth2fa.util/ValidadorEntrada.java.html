@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ValidadorEntrada.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Auth2FA</a> &gt; <a href="index.source.html" class="el_package">mx.uacm.auth2fa.util</a> &gt; <span class="el_source">ValidadorEntrada.java</span></div><h1>ValidadorEntrada.java</h1><pre class="source lang-java linenums">package mx.uacm.auth2fa.util;
+
+import java.util.regex.Pattern;
+
+/**
+ * Validaciones de formato previas a la lógica de negocio.
+ *
+ * &lt;p&gt;La clase no tiene estado. No recorta ni transforma los valores: un
+ * espacio al inicio o al final del usuario es un error de formato y un espacio
+ * dentro de la contraseña forma parte del secreto.&lt;/p&gt;
+ */
+public final class ValidadorEntrada {
+
+<span class="fc" id="L14">    private static final Pattern USUARIO = Pattern.compile(&quot;^[A-Za-z0-9._-]{4,20}$&quot;);</span>
+
+    private ValidadorEntrada() {
+        // Clase de utilidad: no se instancia.
+    }
+
+    /**
+     * Comprueba el formato del nombre de usuario.
+     *
+     * &lt;p&gt;Debe tener de 4 a 20 caracteres y coincidir con
+     * {@code ^[A-Za-z0-9._-]{4,20}$}. No se recorta el valor.&lt;/p&gt;
+     *
+     * @param usuario nombre escrito por la persona
+     * @return {@code true} solo si cumple el formato
+     */
+    public static boolean esUsuarioValido(String usuario) {
+<span class="fc bfc" id="L30" title="All 4 branches covered.">        return usuario != null &amp;&amp; USUARIO.matcher(usuario).matches();</span>
+    }
+
+    /**
+     * Comprueba la longitud y la complejidad de una contraseña.
+     *
+     * &lt;p&gt;Debe tener de 8 a 64 caracteres, al menos una mayúscula, una
+     * minúscula, un dígito y un carácter especial imprimible. Un espacio no
+     * cuenta como carácter especial.&lt;/p&gt;
+     *
+     * @param password contraseña escrita por la persona
+     * @return {@code true} solo si cumple la política
+     */
+    public static boolean esPasswordValida(String password) {
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (password == null) {</span>
+<span class="fc" id="L45">            return false;</span>
+        }
+<span class="fc" id="L47">        int longitud = password.codePointCount(0, password.length());</span>
+<span class="fc bfc" id="L48" title="All 4 branches covered.">        if (longitud &lt; 8 || longitud &gt; 64) {</span>
+<span class="fc" id="L49">            return false;</span>
+        }
+<span class="fc" id="L51">        boolean mayuscula = false;</span>
+<span class="fc" id="L52">        boolean minuscula = false;</span>
+<span class="fc" id="L53">        boolean digito = false;</span>
+<span class="fc" id="L54">        boolean especial = false;</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        for (int i = 0; i &lt; password.length(); ) {</span>
+<span class="fc" id="L56">            int codigo = password.codePointAt(i);</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">            if (Character.isUpperCase(codigo)) {</span>
+<span class="fc" id="L58">                mayuscula = true;</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">            } else if (Character.isLowerCase(codigo)) {</span>
+<span class="fc" id="L60">                minuscula = true;</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            } else if (Character.isDigit(codigo)) {</span>
+<span class="fc" id="L62">                digito = true;</span>
+<span class="pc bpc" id="L63" title="1 of 4 branches missed.">            } else if (!Character.isWhitespace(codigo) &amp;&amp; !Character.isISOControl(codigo)) {</span>
+<span class="fc" id="L64">                especial = true;</span>
+            }
+<span class="fc" id="L66">            i += Character.charCount(codigo);</span>
+<span class="fc" id="L67">        }</span>
+<span class="fc bfc" id="L68" title="All 8 branches covered.">        return mayuscula &amp;&amp; minuscula &amp;&amp; digito &amp;&amp; especial;</span>
+    }
+
+    /**
+     * Comprueba la longitud de una respuesta después de normalizarla.
+     *
+     * &lt;p&gt;El texto normalizado debe tener entre 3 y 100 caracteres y no puede
+     * quedar vacío. Se rechazan caracteres de control.&lt;/p&gt;
+     *
+     * @param respuesta respuesta escrita por la persona
+     * @return {@code true} solo si la respuesta es aceptable
+     */
+    public static boolean esRespuestaValida(String respuesta) {
+<span class="fc bfc" id="L81" title="All 4 branches covered.">        if (respuesta == null || contieneControl(respuesta)) {</span>
+<span class="fc" id="L82">            return false;</span>
+        }
+<span class="fc" id="L84">        String normalizada = NormalizadorRespuestas.normalizar(respuesta);</span>
+<span class="fc" id="L85">        int longitud = normalizada.codePointCount(0, normalizada.length());</span>
+<span class="fc bfc" id="L86" title="All 4 branches covered.">        return longitud &gt;= 3 &amp;&amp; longitud &lt;= 100;</span>
+    }
+
+    private static boolean contieneControl(String valor) {
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        for (int i = 0; i &lt; valor.length(); ) {</span>
+<span class="fc" id="L91">            int codigo = valor.codePointAt(i);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            if (Character.isISOControl(codigo)) {</span>
+<span class="fc" id="L93">                return true;</span>
+            }
+<span class="fc" id="L95">            i += Character.charCount(codigo);</span>
+<span class="fc" id="L96">        }</span>
+<span class="fc" id="L97">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

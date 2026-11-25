@@ -1,0 +1,11 @@
+﻿RNF-10 - Percentil 90 del flujo completo
+Definicion de ejecucion: GET /login + POST /login + POST /preguntas con redireccion a /acceso, en una sesion nueva.
+Ejecuciones medidas: 20
+Metodo del percentil: rango mas cercano sobre la lista ordenada; posicion = ceil(0.90 * n) = 18
+Minimo (ms): 753
+Mediana p50 (ms): 769.6
+Percentil 90 (ms): 795.4
+Maximo (ms): 874
+Promedio (ms): 780.2
+Criterio: p90 <= 2000 ms
+Resultado: CUMPLE

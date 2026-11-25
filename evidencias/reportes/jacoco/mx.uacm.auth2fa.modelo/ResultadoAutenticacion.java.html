@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ResultadoAutenticacion.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Auth2FA</a> &gt; <a href="index.source.html" class="el_package">mx.uacm.auth2fa.modelo</a> &gt; <span class="el_source">ResultadoAutenticacion.java</span></div><h1>ResultadoAutenticacion.java</h1><pre class="source lang-java linenums">package mx.uacm.auth2fa.modelo;
+
+/**
+ * Resultado de una operación de autenticación.
+ *
+ * &lt;p&gt;Transporta el tipo, la clave de mensaje del catálogo y el identificador
+ * del usuario. No contiene contraseñas, respuestas ni hashes. Un resultado
+ * exitoso siempre lleva un identificador mayor que cero; un fallo usa cero.&lt;/p&gt;
+ */
+public final class ResultadoAutenticacion {
+
+    private final TipoResultado tipo;
+    private final String claveMensaje;
+    private final long usuarioId;
+
+<span class="fc" id="L16">    public ResultadoAutenticacion(TipoResultado tipo, String claveMensaje, long usuarioId) {</span>
+<span class="pc bpc" id="L17" title="1 of 2 branches missed.">        if (tipo == null) {</span>
+<span class="nc" id="L18">            throw new IllegalArgumentException(&quot;El tipo de resultado es obligatorio&quot;);</span>
+        }
+<span class="pc bpc" id="L20" title="1 of 4 branches missed.">        if (tipo.esExitoso() &amp;&amp; usuarioId &lt;= 0) {</span>
+<span class="nc" id="L21">            throw new IllegalArgumentException(&quot;Un resultado exitoso requiere un usuario válido&quot;);</span>
+        }
+<span class="pc bpc" id="L23" title="1 of 4 branches missed.">        if (!tipo.esExitoso() &amp;&amp; usuarioId != 0) {</span>
+<span class="nc" id="L24">            throw new IllegalArgumentException(&quot;Un resultado fallido no transporta usuario&quot;);</span>
+        }
+<span class="fc" id="L26">        this.tipo = tipo;</span>
+<span class="fc" id="L27">        this.claveMensaje = claveMensaje;</span>
+<span class="fc" id="L28">        this.usuarioId = usuarioId;</span>
+<span class="fc" id="L29">    }</span>
+
+    public static ResultadoAutenticacion exitoso(TipoResultado tipo, long usuarioId) {
+<span class="fc" id="L32">        return new ResultadoAutenticacion(tipo, null, usuarioId);</span>
+    }
+
+    public static ResultadoAutenticacion fallido(TipoResultado tipo, String claveMensaje) {
+<span class="fc" id="L36">        return new ResultadoAutenticacion(tipo, claveMensaje, 0L);</span>
+    }
+
+    public TipoResultado getTipo() {
+<span class="fc" id="L40">        return tipo;</span>
+    }
+
+    public String getClaveMensaje() {
+<span class="fc" id="L44">        return claveMensaje;</span>
+    }
+
+    public long getUsuarioId() {
+<span class="fc" id="L48">        return usuarioId;</span>
+    }
+
+    public boolean esExitoso() {
+<span class="nc" id="L52">        return tipo.esExitoso();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L57">        return &quot;ResultadoAutenticacion{tipo=&quot; + tipo</span>
+                + &quot;, claveMensaje='&quot; + claveMensaje + '\''
+                + &quot;, usuarioId=&quot; + usuarioId
+                + '}';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

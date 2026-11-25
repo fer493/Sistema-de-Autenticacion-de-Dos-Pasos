@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: mx.uacm.auth2fa.util.HashUtilTest
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.944 s -- in mx.uacm.auth2fa.util.HashUtilTest

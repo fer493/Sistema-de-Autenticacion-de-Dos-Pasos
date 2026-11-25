@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ServicioAutenticacion.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Auth2FA</a> &gt; <a href="index.source.html" class="el_package">mx.uacm.auth2fa.modelo</a> &gt; <span class="el_source">ServicioAutenticacion.java</span></div><h1>ServicioAutenticacion.java</h1><pre class="source lang-java linenums">package mx.uacm.auth2fa.modelo;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import mx.uacm.auth2fa.dao.PreguntaDAO;
+import mx.uacm.auth2fa.dao.UsuarioDAO;
+import mx.uacm.auth2fa.util.HashUtil;
+import mx.uacm.auth2fa.util.NormalizadorRespuestas;
+
+/**
+ * Reglas de autenticación de las dos etapas.
+ *
+ * &lt;p&gt;No conoce {@code HttpSession}, JSP ni códigos HTTP. Recibe los DAO por
+ * constructor para poder sustituirlos por dobles en las pruebas y devuelve un
+ * {@link ResultadoAutenticacion}. Los fallos técnicos se propagan como
+ * excepciones del paquete DAO; los fallos del usuario se modelan como
+ * resultado.&lt;/p&gt;
+ */
+public class ServicioAutenticacion {
+
+    /** Fallos consecutivos de credenciales que activan el bloqueo temporal. */
+    public static final int MAX_INTENTOS_FALLIDOS = 3;
+
+    /** Duración del bloqueo temporal. */
+<span class="fc" id="L33">    public static final Duration DURACION_BLOQUEO = Duration.ofMinutes(15);</span>
+
+<span class="fc" id="L35">    private static final Logger REGISTRO = Logger.getLogger(ServicioAutenticacion.class.getName());</span>
+
+    private final UsuarioDAO usuarioDAO;
+    private final PreguntaDAO preguntaDAO;
+    private final Clock reloj;
+
+    /**
+     * Construye el servicio con el reloj del sistema.
+     *
+     * @param usuarioDAO  persistencia de cuentas
+     * @param preguntaDAO persistencia de preguntas
+     */
+    public ServicioAutenticacion(UsuarioDAO usuarioDAO, PreguntaDAO preguntaDAO) {
+<span class="nc" id="L48">        this(usuarioDAO, preguntaDAO, Clock.systemUTC());</span>
+<span class="nc" id="L49">    }</span>
+
+    /**
+     * Construye el servicio con un reloj controlado.
+     *
+     * &lt;p&gt;Visible en el paquete para que las pruebas fijen el instante sin
+     * modificar el código de producción.&lt;/p&gt;
+     */
+<span class="fc" id="L57">    ServicioAutenticacion(UsuarioDAO usuarioDAO, PreguntaDAO preguntaDAO, Clock reloj) {</span>
+<span class="pc bpc" id="L58" title="2 of 4 branches missed.">        if (usuarioDAO == null || preguntaDAO == null) {</span>
+<span class="nc" id="L59">            throw new IllegalArgumentException(&quot;Los DAO son obligatorios&quot;);</span>
+        }
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (reloj == null) {</span>
+<span class="nc" id="L62">            throw new IllegalArgumentException(&quot;El reloj es obligatorio&quot;);</span>
+        }
+<span class="fc" id="L64">        this.usuarioDAO = usuarioDAO;</span>
+<span class="fc" id="L65">        this.preguntaDAO = preguntaDAO;</span>
+<span class="fc" id="L66">        this.reloj = reloj;</span>
+<span class="fc" id="L67">    }</span>
+
+    /**
+     * Valida usuario y contraseña y aplica la política de intentos fallidos.
+     *
+     * @param usuario  nombre de acceso ya validado por el controlador
+     * @param password contraseña sin recortar ni normalizar
+     * @return resultado de la primera etapa
+     */
+    public ResultadoAutenticacion autenticarCredenciales(String usuario, String password) {
+<span class="pc bpc" id="L77" title="1 of 4 branches missed.">        if (usuario == null || usuario.isEmpty()) {</span>
+<span class="fc" id="L78">            throw new IllegalArgumentException(&quot;El usuario es obligatorio&quot;);</span>
+        }
+<span class="pc bpc" id="L80" title="1 of 4 branches missed.">        if (password == null || password.isEmpty()) {</span>
+<span class="fc" id="L81">            throw new IllegalArgumentException(&quot;La contraseña es obligatoria&quot;);</span>
+        }
+
+<span class="fc" id="L84">        Optional&lt;Usuario&gt; encontrado = usuarioDAO.buscarPorNombre(usuario);</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (encontrado.isEmpty()) {</span>
+<span class="fc" id="L86">            REGISTRO.info(() -&gt; &quot;LOGIN_FALLO resultado=CREDENCIALES_INVALIDAS&quot;);</span>
+<span class="fc" id="L87">            return ResultadoAutenticacion.fallido(TipoResultado.CREDENCIALES_INVALIDAS, &quot;error.credenciales&quot;);</span>
+        }
+
+<span class="fc" id="L90">        Usuario cuenta = encontrado.get();</span>
+<span class="fc" id="L91">        Instant ahora = reloj.instant();</span>
+
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        if (cuenta.estaBloqueado(ahora)) {</span>
+<span class="fc" id="L94">            REGISTRO.warning(() -&gt; &quot;BLOQUEO_APLICADO usuarioId=&quot; + cuenta.getId()</span>
+<span class="fc" id="L95">                    + &quot; intentos=&quot; + cuenta.getIntentosFallidos());</span>
+<span class="fc" id="L96">            return ResultadoAutenticacion.fallido(TipoResultado.CUENTA_BLOQUEADA, &quot;error.bloqueo&quot;);</span>
+        }
+
+<span class="fc" id="L99">        int intentos = cuenta.getIntentosFallidos();</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        if (cuenta.tieneBloqueoVencido(ahora)) {</span>
+            // Reinicio perezoso: el bloqueo vencido se limpia en el siguiente intento.
+<span class="fc" id="L102">            usuarioDAO.reiniciarIntentos(cuenta.getId());</span>
+<span class="fc" id="L103">            intentos = 0;</span>
+        }
+
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (HashUtil.verificarPassword(password, cuenta.getHashPassword())) {</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">            if (intentos &gt; 0) {</span>
+<span class="nc" id="L108">                usuarioDAO.reiniciarIntentos(cuenta.getId());</span>
+            }
+<span class="fc" id="L110">            REGISTRO.info(() -&gt; &quot;LOGIN_OK usuarioId=&quot; + cuenta.getId());</span>
+<span class="fc" id="L111">            return ResultadoAutenticacion.exitoso(TipoResultado.CREDENCIALES_OK, cuenta.getId());</span>
+        }
+
+<span class="fc" id="L114">        int nuevosIntentos = intentos + 1;</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (nuevosIntentos &gt;= MAX_INTENTOS_FALLIDOS) {</span>
+<span class="fc" id="L116">            usuarioDAO.actualizarIntentosFallidos(cuenta.getId(), MAX_INTENTOS_FALLIDOS);</span>
+<span class="fc" id="L117">            Instant desbloqueo = ahora.plus(DURACION_BLOQUEO);</span>
+<span class="fc" id="L118">            usuarioDAO.guardarBloqueoHasta(cuenta.getId(), desbloqueo);</span>
+<span class="fc" id="L119">            REGISTRO.warning(() -&gt; &quot;BLOQUEO_APLICADO usuarioId=&quot; + cuenta.getId()</span>
+                    + &quot; intentos=&quot; + MAX_INTENTOS_FALLIDOS
+                    + &quot; desbloqueo=&quot; + desbloqueo);
+<span class="fc" id="L122">            return ResultadoAutenticacion.fallido(TipoResultado.CUENTA_BLOQUEADA, &quot;error.bloqueo&quot;);</span>
+        }
+
+<span class="fc" id="L125">        usuarioDAO.actualizarIntentosFallidos(cuenta.getId(), nuevosIntentos);</span>
+<span class="fc" id="L126">        REGISTRO.warning(() -&gt; &quot;LOGIN_FALLO usuarioId=&quot; + cuenta.getId()</span>
+                + &quot; resultado=CREDENCIALES_INVALIDAS&quot;);
+<span class="fc" id="L128">        return ResultadoAutenticacion.fallido(TipoResultado.CREDENCIALES_INVALIDAS, &quot;error.credenciales&quot;);</span>
+    }
+
+    /**
+     * Obtiene las dos preguntas visibles de una cuenta, sin hashes.
+     *
+     * @param usuarioId identificador proveniente de {@code usuarioIdPendiente}
+     * @return lista ordenada por posición con exactamente dos elementos
+     * @throws CuentaIncompletaException si la cuenta no tiene las dos preguntas
+     */
+    public List&lt;PreguntaSeguridad&gt; obtenerPreguntas(long usuarioId) {
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (usuarioId &lt;= 0) {</span>
+<span class="fc" id="L140">            throw new IllegalArgumentException(&quot;El identificador de la cuenta debe ser mayor que cero&quot;);</span>
+        }
+<span class="fc" id="L142">        List&lt;PreguntaSeguridad&gt; preguntas = preguntaDAO.listarPorUsuario(usuarioId);</span>
+<span class="fc" id="L143">        validarCuentaCompleta(usuarioId, preguntas);</span>
+<span class="fc" id="L144">        List&lt;PreguntaSeguridad&gt; visibles = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (PreguntaSeguridad pregunta : preguntas) {</span>
+<span class="fc" id="L146">            visibles.add(pregunta.sinHash());</span>
+<span class="fc" id="L147">        }</span>
+<span class="fc" id="L148">        visibles.sort(Comparator.comparingInt(PreguntaSeguridad::getOrden));</span>
+<span class="fc" id="L149">        return visibles;</span>
+    }
+
+    /**
+     * Verifica las dos respuestas de seguridad.
+     *
+     * &lt;p&gt;No altera el contador de intentos de credenciales. Si una o ambas
+     * respuestas no coinciden, el resultado es {@code RESPUESTAS_INVALIDAS}
+     * sin indicar cuál falló.&lt;/p&gt;
+     *
+     * @param usuarioId  identificador de la cuenta
+     * @param respuesta1 primera respuesta sin normalizar
+     * @param respuesta2 segunda respuesta sin normalizar
+     * @return resultado de la segunda etapa
+     * @throws CuentaIncompletaException si la cuenta no tiene las dos preguntas
+     */
+    public ResultadoAutenticacion verificarRespuestas(long usuarioId, String respuesta1, String respuesta2) {
+<span class="fc bfc" id="L166" title="All 2 branches covered.">        if (usuarioId &lt;= 0) {</span>
+<span class="fc" id="L167">            throw new IllegalArgumentException(&quot;El identificador de la cuenta debe ser mayor que cero&quot;);</span>
+        }
+<span class="pc bpc" id="L169" title="1 of 4 branches missed.">        if (respuesta1 == null || respuesta2 == null) {</span>
+<span class="fc" id="L170">            throw new IllegalArgumentException(&quot;Ambas respuestas son obligatorias&quot;);</span>
+        }
+
+<span class="fc" id="L173">        List&lt;PreguntaSeguridad&gt; preguntas = preguntaDAO.listarPorUsuario(usuarioId);</span>
+<span class="fc" id="L174">        validarCuentaCompleta(usuarioId, preguntas);</span>
+<span class="fc" id="L175">        List&lt;String&gt; hashes = preguntaDAO.obtenerHashesPorUsuario(usuarioId);</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">        if (hashes.size() != 2) {</span>
+<span class="nc" id="L177">            throw new CuentaIncompletaException(</span>
+                    &quot;La cuenta &quot; + usuarioId + &quot; no tiene exactamente dos hashes de respuesta&quot;);
+        }
+
+<span class="fc" id="L181">        String normalizada1 = NormalizadorRespuestas.normalizar(respuesta1);</span>
+<span class="fc" id="L182">        String normalizada2 = NormalizadorRespuestas.normalizar(respuesta2);</span>
+<span class="fc" id="L183">        boolean coincide1 = HashUtil.verificarRespuesta(normalizada1, hashes.get(0));</span>
+<span class="fc" id="L184">        boolean coincide2 = HashUtil.verificarRespuesta(normalizada2, hashes.get(1));</span>
+
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        if (coincide1 &amp; coincide2) {</span>
+<span class="fc" id="L187">            REGISTRO.info(() -&gt; &quot;RESPUESTAS_OK usuarioId=&quot; + usuarioId);</span>
+<span class="fc" id="L188">            return ResultadoAutenticacion.exitoso(TipoResultado.RESPUESTAS_OK, usuarioId);</span>
+        }
+
+<span class="fc" id="L191">        REGISTRO.warning(() -&gt; &quot;RESPUESTAS_FALLO usuarioId=&quot; + usuarioId</span>
+                + &quot; resultado=RESPUESTAS_INVALIDAS&quot;);
+<span class="fc" id="L193">        return ResultadoAutenticacion.fallido(TipoResultado.RESPUESTAS_INVALIDAS, &quot;error.respuestas&quot;);</span>
+    }
+
+    private static void validarCuentaCompleta(long usuarioId, List&lt;PreguntaSeguridad&gt; preguntas) {
+<span class="pc bpc" id="L197" title="1 of 4 branches missed.">        if (preguntas == null || preguntas.size() != 2) {</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">            int encontradas = preguntas == null ? 0 : preguntas.size();</span>
+<span class="fc" id="L199">            throw new CuentaIncompletaException(</span>
+                    &quot;La cuenta &quot; + usuarioId + &quot; tiene &quot; + encontradas + &quot; preguntas; se esperaban 2&quot;);
+        }
+<span class="fc" id="L202">        boolean orden1 = false;</span>
+<span class="fc" id="L203">        boolean orden2 = false;</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">        for (PreguntaSeguridad pregunta : preguntas) {</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">            if (pregunta.getOrden() == 1) {</span>
+<span class="fc" id="L206">                orden1 = true;</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">            } else if (pregunta.getOrden() == 2) {</span>
+<span class="fc" id="L208">                orden2 = true;</span>
+            }
+<span class="fc" id="L210">        }</span>
+<span class="pc bpc" id="L211" title="2 of 4 branches missed.">        if (!orden1 || !orden2) {</span>
+<span class="nc" id="L212">            throw new CuentaIncompletaException(</span>
+                    &quot;La cuenta &quot; + usuarioId + &quot; no tiene las preguntas con orden 1 y 2&quot;);
+        }
+<span class="fc" id="L215">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

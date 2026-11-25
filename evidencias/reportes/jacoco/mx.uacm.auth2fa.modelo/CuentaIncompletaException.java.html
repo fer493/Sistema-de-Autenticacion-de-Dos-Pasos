@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CuentaIncompletaException.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Auth2FA</a> &gt; <a href="index.source.html" class="el_package">mx.uacm.auth2fa.modelo</a> &gt; <span class="el_source">CuentaIncompletaException.java</span></div><h1>CuentaIncompletaException.java</h1><pre class="source lang-java linenums">package mx.uacm.auth2fa.modelo;
+
+/**
+ * Señala que una cuenta no tiene exactamente dos preguntas con orden 1 y 2.
+ *
+ * &lt;p&gt;Es un error de configuración, no un fallo del usuario. El controlador la
+ * captura, registra el identificador de la cuenta y muestra el mensaje
+ * técnico genérico sin conceder acceso.&lt;/p&gt;
+ */
+public class CuentaIncompletaException extends RuntimeException {
+
+    private static final long serialVersionUID = 1L;
+
+    public CuentaIncompletaException(String mensaje) {
+<span class="fc" id="L15">        super(mensaje);</span>
+<span class="fc" id="L16">    }</span>
+
+    public CuentaIncompletaException(String mensaje, Throwable causa) {
+<span class="nc" id="L19">        super(mensaje, causa);</span>
+<span class="nc" id="L20">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

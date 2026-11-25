@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PreguntaSeguridad.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Auth2FA</a> &gt; <a href="index.source.html" class="el_package">mx.uacm.auth2fa.modelo</a> &gt; <span class="el_source">PreguntaSeguridad.java</span></div><h1>PreguntaSeguridad.java</h1><pre class="source lang-java linenums">package mx.uacm.auth2fa.modelo;
+
+/**
+ * Pregunta de seguridad asociada a una cuenta.
+ *
+ * &lt;p&gt;La vista recibe instancias sin hash. El servicio obtiene los hashes por
+ * una operación separada del DAO para que un descuido de la JSP no los
+ * exponga.&lt;/p&gt;
+ */
+public final class PreguntaSeguridad {
+
+    private final long id;
+    private final long usuarioId;
+    private final int orden;
+    private final String texto;
+    private final String hashRespuesta;
+
+<span class="fc" id="L18">    public PreguntaSeguridad(long id, long usuarioId, int orden, String texto, String hashRespuesta) {</span>
+<span class="pc bpc" id="L19" title="1 of 2 branches missed.">        if (id &lt;= 0) {</span>
+<span class="nc" id="L20">            throw new IllegalArgumentException(&quot;El identificador de la pregunta debe ser mayor que cero&quot;);</span>
+        }
+<span class="pc bpc" id="L22" title="1 of 2 branches missed.">        if (usuarioId &lt;= 0) {</span>
+<span class="nc" id="L23">            throw new IllegalArgumentException(&quot;El identificador del usuario debe ser mayor que cero&quot;);</span>
+        }
+<span class="pc bpc" id="L25" title="1 of 4 branches missed.">        if (orden != 1 &amp;&amp; orden != 2) {</span>
+<span class="nc" id="L26">            throw new IllegalArgumentException(&quot;El orden de la pregunta debe ser 1 o 2&quot;);</span>
+        }
+<span class="pc bpc" id="L28" title="3 of 6 branches missed.">        if (texto == null || texto.length() &lt; 10 || texto.length() &gt; 120) {</span>
+<span class="nc" id="L29">            throw new IllegalArgumentException(&quot;El texto de la pregunta debe tener entre 10 y 120 caracteres&quot;);</span>
+        }
+<span class="fc" id="L31">        this.id = id;</span>
+<span class="fc" id="L32">        this.usuarioId = usuarioId;</span>
+<span class="fc" id="L33">        this.orden = orden;</span>
+<span class="fc" id="L34">        this.texto = texto;</span>
+<span class="fc" id="L35">        this.hashRespuesta = hashRespuesta;</span>
+<span class="fc" id="L36">    }</span>
+
+    /**
+     * Devuelve una copia de la pregunta sin el hash de la respuesta.
+     *
+     * @return pregunta apta para la vista
+     */
+    public PreguntaSeguridad sinHash() {
+<span class="fc" id="L44">        return new PreguntaSeguridad(id, usuarioId, orden, texto, null);</span>
+    }
+
+    public long getId() {
+<span class="nc" id="L48">        return id;</span>
+    }
+
+    public long getUsuarioId() {
+<span class="nc" id="L52">        return usuarioId;</span>
+    }
+
+    public int getOrden() {
+<span class="fc" id="L56">        return orden;</span>
+    }
+
+    public String getTexto() {
+<span class="fc" id="L60">        return texto;</span>
+    }
+
+    public String getHashRespuesta() {
+<span class="fc" id="L64">        return hashRespuesta;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L69">        return &quot;PreguntaSeguridad{id=&quot; + id</span>
+                + &quot;, usuarioId=&quot; + usuarioId
+                + &quot;, orden=&quot; + orden
+                + &quot;, texto='&quot; + texto + '\''
+                + '}';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
