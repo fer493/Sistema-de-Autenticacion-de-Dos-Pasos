@@ -1,0 +1,7 @@
+# Copie este archivo como db.properties y ajuste los valores locales.
+# db.properties no se versiona porque contiene credenciales.
+
+db.driver=com.mysql.cj.jdbc.Driver
+db.url=jdbc:mysql://localhost:3306/auth2fa?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Mexico_City&characterEncoding=UTF-8
+db.usuario=root
+db.password=CAMBIAR

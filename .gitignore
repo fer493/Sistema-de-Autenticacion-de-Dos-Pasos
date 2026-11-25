@@ -1,0 +1,25 @@
+# Compilados y artefactos
+target/
+*.war
+*.class
+*.log
+
+# Configuración local con credenciales reales
+src/main/resources/db.properties
+
+# IDE / editores
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Sistema operativo
+desktop.ini
+Thumbs.db
+.DS_Store
+
+# Evidencias generadas localmente
+evidencias/
+screenshots/
